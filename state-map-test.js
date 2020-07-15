@@ -1,4 +1,5 @@
-let states, map, requests = {}
+let states, map, slider, output, geoData, currentTime, times = [], requests = {}
+
 
 function getStatesGeojson () {
   axios.get('https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/us-states.json')
@@ -6,7 +7,23 @@ function getStatesGeojson () {
          states = response.data
          addStatesToMap()
          console.log(states)
+         setUpSlider()
        })
+}
+
+function setUpSlider () {
+  slider = document.getElementById("timeRange");
+  output = document.getElementById("timeDisplay");
+  output.innerHTML = times[slider.value] // Display the default slider value
+  slider.max = times.length - 1
+  // Update the current slider value (each time you drag the slider handle)
+  slider.oninput = function() {
+    currentTime = times[this.value]
+    output.innerHTML = currentTime
+    map.removeLayer(geoData)
+    addStatesToMap()
+    console.log(map)
+  }
 }
 
 function getStatesRequests () {
@@ -20,12 +37,16 @@ function getStatesRequests () {
          const rows = data.rows
          for (row of rows) {
            const state = row.stateprovince
+           const time = row.week
            if (!requests[state])
-             requests[state] = 0
-           requests[row.stateprovince] +=  row.num_requests
+             requests[state] = {}
+           requests[row.stateprovince][time] =  row.num_requests
+           times.push(row.week)
          }
-         console.log(rows)
-         console.log(requests)
+         // blech, must be a better way than this
+         times = new Set(times)
+         times = Array.from(times).sort();
+         getStatesGeojson()
        })
 }
 
@@ -34,10 +55,12 @@ function setUpMap () {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
+  getStatesRequests()
 }
 
 function addStatesToMap() {
-  L.geoJson(states, {style: style}).addTo(map)
+  geoData = L.geoJson(states, {style: style})
+  geoData.addTo(map)
 }
 
 function getColor(d) {
@@ -53,8 +76,7 @@ function getColor(d) {
 
 function style(feature) {
     return {
-        // fillColor: getColor(feature.properties.density),
-        fillColor: getColor(requests[feature.id]),
+        fillColor: getColor(requests[feature.id][currentTime]),
         weight: 2,
         opacity: 1,
         color: 'white',
@@ -64,5 +86,3 @@ function style(feature) {
 }
 
 setUpMap()
-getStatesRequests()
-getStatesGeojson()
