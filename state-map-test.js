@@ -2,7 +2,8 @@ let states, map, slider, output, geoData, currentTime, times = [], requests = {}
 
 let grades = [0, 10, 20, 50, 100, 200, 500, 1000]
 
-const colorScale = chroma.scale(['yellow', '008ae5'])
+const colorScale = chroma.scale(chroma.brewer.GnBu)
+const notFoundColor = '#726d6d'
 
 function getStatesGeojson () {
   axios.get('https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/us-states.json')
@@ -87,7 +88,7 @@ function addStatesToMap() {
 
 function getColor(d, max=1000) {
   if (!d)
-    return 'aqua'
+    return notFoundColor
   return colorScale(d / max)
     // return d > 1000 ? '#800026' :
     //        d > 500  ? '#BD0026' :
@@ -129,7 +130,7 @@ function setUpLegend () {
   legend.onAdd = function (map) {
       let div = L.DomUtil.create('div', 'info legend')
 
-      div.innerHTML += '<i style="background: aqua"></i> No Requests <br>'
+      div.innerHTML += `<i style="background: ${notFoundColor}"></i> No Requests <br>`
 
       // loop through our intervals and generate a label with a colored square for each interval
       for (let i = 0; i < grades.length; i++) {
