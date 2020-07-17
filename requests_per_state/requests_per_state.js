@@ -1,6 +1,6 @@
-let states, map, slider, output, geoData, currentTime, times = [], requests = {}, maxVals = {}, legend, info
+let states, map, geoData, requests = {}, max, legend, info
 
-let grades = [0, 10, 20, 50, 100, 200, 500, 1000]
+let grades = []
 
 const colorScale = chroma.scale(chroma.brewer.GnBu)
 const notFoundColor = '#726d6d'
@@ -12,31 +12,8 @@ function getStatesGeojson () {
          addStatesToMap()
          setUpLegend()
          console.log(states)
-         setUpSlider()
          setUpInfoPane()
        })
-}
-
-function refreshMap () {
-  map.removeLayer(geoData)
-  addStatesToMap()
-}
-
-function setUpSlider () {
-  slider = document.getElementById("timeRange");
-  output = document.getElementById("timeDisplay");
-  output.innerHTML = times[slider.value] // Display the default slider value
-  slider.max = times.length - 1
-  currentTime = times[slider.value]
-  // Update the current slider value (each time you drag the slider handle)
-  slider.oninput = function() {
-    currentTime = times[this.value]
-    output.innerHTML = currentTime
-    doGrades()
-    refreshMap()
-  }
-  doGrades()
-  refreshMap()
 }
 
 function getStatesRequests () {
@@ -45,29 +22,18 @@ function getStatesRequests () {
   const jsonUrl = 'https://raw.githubusercontent.com/ryan-cranfill/gup-viz/master/data/state_requests_per_week_latest.json'
 
   axios.get(jsonUrl)
-       .then(response => {
-         const data = response.data.query_result.data
-         const rows = data.rows
-         for (row of rows) {
-           const state = row.stateprovince
-           const time = row.week
-           const numRequests = row.num_requests
-           if (!requests[state])
-             requests[state] = {}
-
-           if (!maxVals[time] || maxVals[time] < numRequests)
-             maxVals[time] = numRequests
-
-           requests[row.stateprovince][time] = numRequests
-           times.push(row.week)
-         }
-         // blech, must be a better way than this
-         times = new Set(times)
-         times = Array.from(times).sort();
-         getStatesGeojson()
-
-         console.log(maxVals)
-       })
+     .then(response => {
+       const data = response.data.query_result.data
+       const rows = data.rows
+       for (row of rows) {
+         const state = row.stateprovince
+         if (!requests[state])
+           requests[state] = 0
+         requests[state] +=  row.num_requests
+       }
+       max = Math.max(...Object.values(requests))
+       getStatesGeojson()
+     })
 }
 
 function setUpMap () {
@@ -86,23 +52,24 @@ function addStatesToMap() {
   geoData.addTo(map)
 }
 
-function getColor(d, max=1000) {
+function getColor(d) {
   if (!d)
     return notFoundColor
   return colorScale(d / max)
-    // return d > 1000 ? '#800026' :
-    //        d > 500  ? '#BD0026' :
-    //        d > 200  ? '#E31A1C' :
-    //        d > 100  ? '#FC4E2A' :
-    //        d > 50   ? '#FD8D3C' :
-    //        d > 20   ? '#FEB24C' :
-    //        d > 10   ? '#FED976' :
-    //                   '#FFEDA0';
+}
+
+function doGrades (numSteps= 5) {
+  grades = []
+  const stepSize = Math.round(max / numSteps)
+
+  for (let i of _.range(0, numSteps + 1)) {
+    grades.push(i * stepSize)
+  }
 }
 
 function style(feature) {
     return {
-        fillColor: getColor(requests[feature.id][currentTime], maxVals[currentTime]),
+        fillColor: getColor(requests[feature.id]),
         weight: 2,
         opacity: 1,
         color: 'white',
@@ -111,18 +78,8 @@ function style(feature) {
     };
 }
 
-function doGrades (numSteps= 5) {
-  grades = []
-  const currentVal = maxVals[currentTime]
-  const stepSize = Math.round(currentVal / numSteps)
-
-  for (let i of _.range(0, numSteps + 1)) {
-    grades.push(i * stepSize)
-  }
-  setUpLegend()
-}
-
 function setUpLegend () {
+  doGrades()
   if (legend)
     map.removeControl(legend)
   legend = L.control({position: 'bottomright'});
@@ -135,7 +92,7 @@ function setUpLegend () {
       // loop through our intervals and generate a label with a colored square for each interval
       for (let i = 0; i < grades.length; i++) {
           div.innerHTML +=
-              '<i style="background:' + getColor(grades[i] + 1, maxVals[currentTime]) + '"></i> ' +
+              '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
               grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
       }
 
@@ -192,7 +149,7 @@ function setUpInfoPane () {
     let insert
     if (feature) {
       const props = feature.properties
-      const numRequests = requests[feature.id][currentTime]
+      const numRequests = requests[feature.id]
       const numRequestsStr = numRequests ? numRequests.toString() : 'no'
       insert = '<b>' + props.name + '</b> ' + numRequestsStr + ' requests'
     } else {

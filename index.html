@@ -3,11 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <title>Get Us PPE Maps</title>
+  <link rel="stylesheet" href="style.css" type="text/css">
+  <script src="main.js"></script>
 </head>
 <body>
-  <div id="map-selector">
-    Requests per week by state
+  <!-- Tab links -->
+  <div class="tab">
+    <button class="tab-links" onclick="openTab(event, 'London')" id="defaultOpen">Requests Per State</button>
+    <button class="tab-links" onclick="openTab(event, 'Paris')">Requests Per Week</button>
   </div>
-  <iframe src="./test-map-from-api.html" height="700px" width="100%"></iframe>
+
+  <!-- Tab content -->
+  <div id="London" class="tab-content">
+    <iframe src="requests_per_state/requests_per_state.html" height="700px" width="100%"></iframe>
+  </div>
+
+  <div id="Paris" class="tab-content">
+    <iframe src="requests_per_week/requests_per_week.html" height="700px" width="100%"></iframe>
+  </div>
+
+  <script>
+  // Get the element with id="defaultOpen" and click on it
+  document.getElementById("defaultOpen").click();
+  </script>
 </body>
 </html>
