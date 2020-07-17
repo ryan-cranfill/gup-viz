@@ -9,16 +9,16 @@
 <body>
   <!-- Tab links -->
   <div class="tab">
-    <button class="tab-links" onclick="openTab(event, 'London')" id="defaultOpen">Requests Per State</button>
-    <button class="tab-links" onclick="openTab(event, 'Paris')">Requests Per Week</button>
+    <button class="tab-links" onclick="openTab(event, 'requests-per-state')" id="defaultOpen">Requests Per State</button>
+    <button class="tab-links" onclick="openTab(event, 'requests-per-week')">Requests Per Week</button>
   </div>
 
   <!-- Tab content -->
-  <div id="London" class="tab-content">
+  <div id="requests-per-state" class="tab-content">
     <iframe src="requests_per_state/requests_per_state.html" height="700px" width="100%"></iframe>
   </div>
 
-  <div id="Paris" class="tab-content">
+  <div id="requests-per-week" class="tab-content">
     <iframe src="requests_per_week/requests_per_week.html" height="700px" width="100%"></iframe>
   </div>
 
